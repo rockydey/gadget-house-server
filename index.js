@@ -37,10 +37,18 @@ async function run() {
         const productsCollection = client.db("gadgetHouse").collection("items");
 
         app.get('/items', async (req, res) => {
+            const size = parseInt(req.query.size);
+            const page = parseInt(req.query.page);
             const query = {};
             const cursor = productsCollection.find(query);
-            const result = await cursor.toArray();
-            res.send(result);
+            let items;
+            if (size || page) {
+                items = await cursor.skip(page * size).limit(size).toArray()
+            }
+            else {
+                items = await cursor.toArray();
+            }
+            res.send(items);
         });
 
         app.get('/item/:id', async (req, res) => {
@@ -103,6 +111,12 @@ async function run() {
                 expiresIn: '1d'
             });
             res.send({ accessToken });
+        });
+
+        // Pagination
+        app.get('/itemsCount', async (req, res) => {
+            const count = await productsCollection.estimatedDocumentCount();
+            res.send({ count });
         });
     }
     finally {
